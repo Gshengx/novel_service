@@ -1,41 +1,35 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+// 引入express
+let express = require('express')
+// 引入路径处理模块
+let path = require('path')
+//引入处理解析中间体模块
+let bodyParser = require('body-parser')
+// 引入cors解决跨域
+let cors = require('cors')
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+//引入路径
+let novels_h_router = require('./Routes/novels_h')
+let novels_n_router = require('./Routes/novels_n')
+let user_router = require('./Routes/user')
 
-var app = express();
+// 实例化
+let app = express()
+app.listen(8081)
+console.log('后端服务已开启,现在监听8081端口...')
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
+//使用所需中间件
+app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
+//解析application/json
+app.use(bodyParser.json({ limit: '10mb' }))
+//解析 application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }))
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+//route设置,拦截器在前，route在后。这两者之间位置不能搞混。
+app.use('/api/novels_n', novels_n_router)
+app.use('/api/novels_h', novels_h_router)
+app.use('/api/user', user_router)
+// app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
-});
-
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
-
-module.exports = app;
+module.exports = app
