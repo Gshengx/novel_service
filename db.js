@@ -52,81 +52,73 @@ let test=function(t='n'){
     return sql
 }
 // 注册用户
-let registerUser=function(t='u',name,psw){
-    let sql=`
-    insert into
-        ${tableName[t]} (userName,psw)
+let registerUser = function (name, psw) {
+  let sql = `
+    insert ignore into
+        user (userName,psw)
     values
         ('${name}','${psw}')
-    `;
-    return sql
+    `
+  return sql
 }
 // 根据用户名和密码获取用户信息
-let getUserInfoByName=function(t='u',name,psw){
-    let sql=`
+let getUserInfoByName = function (name, psw) {
+  let sql = `
     select
         *
     from
-        ${tableName[t]}
+        user
     where
-        userName='${name} and psw='${psw}
-    `;
-    return sql
+        userName='${name}' and psw='${psw}'
+    `
+  return sql
 }
 
 // 根据用户id获取用户信息
-let getUserInfoById=function(t='u',id){
-    let sql=`
+let getUserInfoById = function (id) {
+  let sql = `
     select
         *
     from
-        ${tableName[t]}
+        user
     where
         userid='${id}'
-    `;
-    return sql
+    `
+  return sql
 }
 
 // 加入书架或从书架移除
-let updateBookShell=function(t='u',id,bookIds){
-    let sql=`
+let updateBookShell = function (id, bookIds) {
+  let sql = `
     update
-        ${tableName[t]}
+        user
     set
-        bookShell='${bookIds}
+        bookShell='${bookIds}'
     where
         userid='${id}'
-    `;
-    return sql
+    `
+  return sql
 }
 
-// 获取昨天更新的数据
-let getLastNovels=function(t='n'){
-    let sql=`
+// 获取更新的数据
+let getLastNovels=function(t='n',current=1,size=10){
+    let sql = `
     select 
         *
     from
         ${tableName[t]}
-    where
-        DATE_FORMAT( updatetime,'%Y-%m-%d') = DATE_FORMAT(CURDATE()-1,'%Y-%m-%d');`
-}
-
-//分页获取
-let getNovelsByLimit=function(t='n', current=1,size=10){
-    let sql=`
-    select
-        *
-    from
-        ${tableName[t]}
+    order by
+        DATE_FORMAT( updatetime,'%Y-%m-%d') desc,id
     limit
-        ${(current - 1) * size}, ${size}
-    `;
+        ${(current - 1) * size}, ${size};`
+    // where
+    //     DATE_FORMAT( updatetime,'%Y-%m-%d') = DATE_FORMAT(CURDATE()-1,'%Y-%m-%d');`
     return sql
 }
 
 //根据搜索关键词获取列表
 let getNovelsByKeyword=function(t='n',current=1,size=10,keyword){
-    let sql=`
+    let sql = `
         select
             *
         from
@@ -135,19 +127,67 @@ let getNovelsByKeyword=function(t='n',current=1,size=10,keyword){
             title like '%${keyword}%'  or abstract like '%${keyword}%' or author like '%${keyword}%'
         limit
             ${(current - 1) * size}, ${size}
-            `;
-        return sql;
+            `
+        return sql
+}
+// 根据用户id查询阅读记录
+let getReadRecords = function (userid, current = 1, size = 5) {
+  let sql = `
+    select
+        *
+    from
+        read_records
+    where
+        userid = '${userid}'
+    order by
+        DATE_FORMAT( updatetime,'%Y-%m-%d') desc
+    limit
+        ${(current - 1) * size}, ${size}
+    `
+  return sql
 }
 
- module.exports={
-    Query,
+// 插入阅读记录
+let setReadRecord = function (params) {
+  const { id, userid, title, lastpage, updatetime, chart } = params
+  let sql = `
+    insert into
+        read_records(recordid,id,userid,title,lastpage,updatetime,chart)
+    values
+        ('${userid}_${id}','${id}','${userid}','${title}','${lastpage}','${updatetime}','${chart}')
+    on duplicate key update
+        updatetime='${updatetime}',chart='${chart}',lastpage='${lastpage}';
+    `
+  return sql
+}
 
-    test,
-    registerUser,
-    getUserInfoByName,
-    getUserInfoById,
-    updateBookShell,
-    getLastNovels,
-    getNovelsByLimit,
-    getNovelsByKeyword
+// 根据id批量查询数据
+let getNovelsById=function(t='n',books){
+    let arr = JSON.stringify(books.split(','))
+    arr = arr.slice(1,arr.length-1)
+    console.log(arr)
+    let sql=`
+    select
+        *
+    from
+        ${tableName[t]}
+    where
+        id in (${arr});
+    `
+    return sql
+}
+
+ module.exports = {
+   Query,
+
+   test,
+   registerUser,
+   getUserInfoByName,
+   getUserInfoById,
+   updateBookShell,
+   getLastNovels,
+   getReadRecords,
+   getNovelsByKeyword,
+   setReadRecord,
+   getNovelsById
  }

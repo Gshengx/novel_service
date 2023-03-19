@@ -5,7 +5,7 @@ let db=require('../db.js');
 
 // 测试
 router.get('/test',(req,res)=>{
-    let sql = db.test()
+    let sql = db.test('u')
     console.log('连接数据库测试')
     db.Query(sql).then(data=>{
         res.send({"code":"200","data":data});
@@ -15,8 +15,8 @@ router.get('/test',(req,res)=>{
 })
 
 //注册用户
-router.get('/register',(req,res)=>{
-    let sql=db.registerUser();
+router.post('/registerUser',(req,res)=>{
+    let sql=db.registerUser(req.body.name,req.body.psw);
     console.log('注册用户');
     db.Query(sql).then(data=>{
         res.send({"code":"200","data":data});
@@ -25,23 +25,23 @@ router.get('/register',(req,res)=>{
     })
 });
 
-//根据id获取单篇文章的接口
-router.get('/oneArticle',(req,res)=>{
-    let id=req.query.id;
-    let sql=db.oneArticleFront(id);
-    console.log('获取单篇文章');
+//根据用户名和密码获取用户信息
+router.post('/getUserInfoByName',(req,res)=>{
+    let sql=db.getUserInfoByName(req.body.name,req.body.psw);
+    console.log('根据用户名和密码获取用户信息',req.body);
     db.Query(sql).then(data=>{
-        res.send({"code":"200","data":data[0]});
+        res.send({"code":"200","data":data});
     },err=>{
+        console.log("错误",err)
         res.send({"code":"400","err":"服务器开小差了"});
     })
 });
 
-//获取上一篇文章的接口
-router.get('/prePassage',(req,res)=>{
+//根据用户id获取用户信息
+router.get('/getUserInfoById',(req,res)=>{
     let id=req.query.id;
-    let sql=db.prePsgFront(id);
-    console.log('获取上一篇文章');
+    let sql=db.getUserInfoById(id);
+    console.log('根据用户id获取用户信息');
     db.Query(sql).then(data=>{
         if(data[0]){
             res.send({"code":"200","data":data[0]}); 
@@ -53,102 +53,38 @@ router.get('/prePassage',(req,res)=>{
     })
 });
 
-//获取下一篇文章的接口
-router.get('/nextPassage',(req,res)=>{
-    let id=req.query.id;
-    let sql=db.nextPsgFront(id);
-    console.log('获取下一篇文章');
+//加入书架或从书架移除
+router.post('/updateBookShell',(req,res)=>{
+    let sql=db.updateBookShell(req.body.userid,req.body.booksid);
+    console.log('加入书架或从书架移除');
     db.Query(sql).then(data=>{
-        if(data[0]){
-            res.send({"code":"200","data":data[0]}); 
-        }else{
-            res.send({"code":"204"})
-        }
+        res.send({"code":"200","data":data}); 
     },err=>{
         res.send({"code":"400","err":"服务器开小差了"});
     })
 });
 
-//获取分类文章的接口
-router.get('/categoryArticle',(req,res)=>{
-    let sql=db.categoryArticleFront(req.query.category);
-    console.log('前端获取分类文章');
+// 根据用户id查询阅读记录
+router.get('/getReadRecords',(req,res)=>{
+    let id = req.query.userid;
+    let sql = db.getReadRecords(id,req.query.current, req.query.size||10);
+    console.log('根据用户id查询阅读记录')
     db.Query(sql).then(data=>{
-        res.send({"code":"200","data":data});
+        res.send({'code':'200','data':data})
     },err=>{
-        res.send({"code":"服务器开小差了！"});
+        res.send({'code':'400','err':"服务器开小差了"})
     })
 })
 
-//获取归档文章的接口
-router.get('/sortFile',(req,res)=>{
-    let sql=db.sortFileFront();
-    console.log('前端获取归档文章');
+// 插入阅读记录
+router.post('/setReadRecord',(req,res)=>{
+    let params=req.body
+    let sql=db.setReadRecord(params)
+    console.log('插入阅读记录')
     db.Query(sql).then(data=>{
-        res.send({"code":"200","data":data});
+        res.send({'code':'200','data':data})
     },err=>{
-        res.send({"code":"服务器开小差了！"});
-    })
-})
-
-//获取所有标签的接口
-router.get('/tags',(req,res)=>{
-    let sql=db.allTagsFront();
-    console.log('前端获取所有tags');
-    db.Query(sql).then(data=>{
-        res.send({"code":"200","data":data});
-    },err=>{
-        res.send({"code":"服务器开小差了！"});
-    })
-})
-
-//根据标签获取文章接口
-router.get('/tagPassages',(req,res)=>{
-    let tag=req.query.tag;
-    let sql=db.tagPassagesFront(tag);
-    console.log('前端根据标签获取文章列表');
-    db.Query(sql).then(data=>{
-        console.log(data);
-        res.send({"code":"200","data":data});
-    },err=>{
-        res.send({"code":"服务器开小差了！"});
-    })
-})
-
-// 根据关键字获取相应文章接口（大坑，先做一个最基础最简单的）
-router.get('/searchPassages',(req,res)=>{
-    let str=req.query.str;
-    let sql=db.searchPassageFront(str);
-    console.log('前端根据关键字获取文章列表');
-    db.Query(sql).then(data=>{
-        console.log(data);
-        res.send({"code":"200","data":data});
-    },err=>{
-        res.send({"code":"服务器开小差了！"});
-    })
-})
-//发表评论
-router.post('/makeComment',(req,res)=>{
-    let comment=req.body;
-    let sql=db.makeComment(comment);
-    console.log('添加评论');
-
-    db.Query(sql).then(data=>{
-        res.send({"code":"200","data":"添加评论成功！"});
-    },err=>{
-        res.send({"code":"400","err":"服务器炸了"});
-    })
-})
-//获取评论
-router.get('/getComments',(req,res)=>{
-    console.log(req.query);
-    let id=req.query.id;
-    let sql=db.getComments(id);
-    console.log('获取评论');
-    db.Query(sql).then(data=>{
-        res.send({"code":"200","data":data});
-    },err=>{
-        res.send({"code":"400","err":"服务器炸了"});
+        res.send({'code':'400','err':"服务器开小差了"})
     })
 })
 
